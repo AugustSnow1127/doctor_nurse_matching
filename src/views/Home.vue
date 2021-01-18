@@ -1,37 +1,22 @@
 <template lang="pug">
 .home
-  .loginAndSignUp
-  form.login
-    .close X
-    h6 登入
-    .form-group
-      label(for='exampleInputEmail1') 電子信箱
-      input#exampleInputEmail1.form-control(type='email' aria-describedby='emailHelp' placeholder='輸入電子信箱')
-      small#emailHelp.form-text.text-muted 我們絕不會與其他任何人共享您的電子郵件。
-    .form-group
-      label(for='exampleInputPassword1') 密碼
-      input#exampleInputPassword1.form-control(type='password' placeholder='密碼')
-    button.btn.btn-primary(type='submit') 登入
-
-  form.signUp
-    .close X
-    h6 註冊
-    .form-group
-      label(for='exampleInputEmail1') 電子信箱
-      input#exampleInputEmail1.form-control(type='email' aria-describedby='emailHelp' placeholder='輸入電子信箱')
-      small#emailHelp.form-text.text-muted 我們絕不會與其他任何人共享您的電子郵件。
-    .form-group
-      label(for='exampleInputPassword1') 密碼
-      input#exampleInputPassword1.form-control(type='password' placeholder='密碼')
-    button.btn.btn-secondary(type='submit') 註冊
+  Login(v-if="loginStatus" v-on:close="closeLogin")
+  Signup(v-if="signupStatus" v-on:close="closeSignup")
 
   navbar.navbar
     .title 醫師和治療師媒合系統
-    button#loginBtn.btn.btn-primary 登入
-    button#signUpBtn.btn.btn-secondary 註冊
+    .buttons
+      button#loginBtn.btn.btn-primary(@click="openLogin") 登入
+      button#signUpBtn.btn.btn-secondary(@click="openSignup") 註冊
   .system
-    span.matchingDoc 媒合醫師：
-    span.matchingTherapist 媒合治療師：
+    .indicators
+      span.matchingDoc 媒合醫師：
+      span.matchingTherapist 媒合治療師：
+      .colorIndicator
+        .square1
+        span.matchingStatus 可媒合
+        .square2
+        span.matchingStatus 已媒合
     table.table.table-bordered
       thead
         tr
@@ -42,12 +27,12 @@
           th.morning(scope='col') 10:30-11:00
           th.morning(scope='col') 11:00-11:30
           th.morning(scope='col') 11:30-12:00
+          th.afternoon(scope='col') 13:00-13:30
+          th.afternoon(scope='col') 13:30-14:00
           th.afternoon(scope='col') 14:00-14:30
           th.afternoon(scope='col') 14:30-15:00
           th.afternoon(scope='col') 15:00-15:30
-          th.afternoon(scope='col') 15:30-20:00
-          th.afternoon(scope='col') 16:00-16:30
-          th.afternoon(scope='col') 16:30-17:00
+          th.afternoon(scope='col') 15:30-16:00
           th.night(scope='col') 18:00-18:30
           th.night(scope='col') 18:30-19:00
           th.night(scope='col') 19:00-19:30
@@ -190,8 +175,9 @@
 
 <script>
 import $ from 'jquery'
-import TweenLite from 'gsap/TweenLite'
-import 'gsap/CSSPlugin'
+import Login from '@/components/Login.vue'
+import Signup from '@/components/Signup.vue'
+import { mapState } from "vuex";
 
 var selectedWeek 
 var selectedTime
@@ -207,77 +193,118 @@ var theWeekMondayMonth
 var theWeekFridayMonth 
 
 var doctors = [{
-    docName: "張家家",
-    availTime: [{
-      weekday: '一',
-      officeTime: '111000010011111111'
-    },{
-      weekday: '二',
-      officeTime: '000000000000111111'
-    },{
-      weekday: '三',
-      officeTime: '000000000000111111'
-    },{
-      weekday: '四',
-      officeTime: '101101000111000000'
-    },{
-      weekday: '五',
-      officeTime: '111000010011000000'
-    },],
-    bookedTime: []
-  },
-]
+  docName: "張醫師",
+  availTime: [{
+    weekday: '一',
+    officeTime: '111000010011111111'
+  },{
+    weekday: '二',
+    officeTime: '000000000000111111'
+  },{
+    weekday: '三',
+    officeTime: '000000000000111111'
+  },{
+    weekday: '四',
+    officeTime: '101101000111000000'
+  },{
+    weekday: '五',
+    officeTime: '111000010011000000'
+  }],
+  bookedTime: []
+}]
 
 var therapists = [{
-    therapistName: "張寶寶",
-    availTime: [{
-      weekday: '一',
-      officeTime: '000000000000111111'
-    },{
-      weekday: '二',
-      officeTime: '111100101010000111'
-    },{
-      weekday: '三',
-      officeTime: '111000111100000111'
-    },{
-      weekday: '四',
-      officeTime: '001111001111111100'
-    },{
-      weekday: '五',
-      officeTime: '000000000000000000'
-    },],
-  },
-]
+  therapistName: "張心理師",
+  availTime: [{
+    weekday: '一',
+    officeTime: '000000000000111111'
+  },{
+    weekday: '二',
+    officeTime: '111100101010000111'
+  },{
+    weekday: '三',
+    officeTime: '111000111100000111'
+  },{
+    weekday: '四',
+    officeTime: '001111001111111100'
+  },{
+    weekday: '五',
+    officeTime: '000000000000000000'
+  }],
+}]
 
 export default {
+  data() {
+    return {
+      login: false,
+      signup: false,
+    }
+  },
+  computed: {
+    ...mapState({
+      loginStatus: state => state.mStatus.status.loginStatus,
+      signupStatus: state => state.mStatus.status.signupStatus,
+    }),
+  },
+  methods: {
+    openLogin() {
+      this.login = true
+      this.$store.dispatch('mStatus/fetchStatus', {
+        loginStatus: this.login,
+        signupStatus: this.signup
+      })
+    },
+    openSignup() {
+      this.signup = true
+      this.$store.dispatch('mStatus/fetchStatus', {
+        loginStatus: this.login,
+        signupStatus: this.signup
+      })
+    },
+    closeLogin() {
+      this.login = false
+      this.$store.dispatch('mStatus/fetchStatus', {
+        loginStatus: this.login,
+        signupStatus: this.signup
+      })
+      $("html").css('overflow','auto')
+      $("body").css('overflow','auto')
+    },
+    closeSignup() {
+      this.signup = false
+      this.$store.dispatch('mStatus/fetchStatus', {
+        loginStatus: this.login,
+        signupStatus: this.signup
+      })
+      $("html").css('overflow','auto')
+      $("body").css('overflow','auto')
+    },
+  },
   mounted() {
     $(document).ready(function(){
       //登入註冊
       $("#loginBtn").click(function() {
-        TweenLite.to(".loginAndSignUp", 0.1, {display: 'block'})
-        TweenLite.to(".loginAndSignUp", 0.2, {opacity: 1})
-        TweenLite.to(".login", 0.1, {display: 'block'})
-        TweenLite.to(".login", 0.2, {opacity: 1})
+        $(".loginAndSignUp").css('display', 'block')
+        $(".loginAndSignUp").css('opacity', '1')
+        $(".login").css('display', 'block')
+        $(".login").css('opacity', '1')
+        $("html").css('overflow','hidden')
+        $("body").css('overflow','hidden')
       })
       $("#signUpBtn").click(function() {
-        TweenLite.to(".loginAndSignUp", 0.1, {display: 'block'})
-        TweenLite.to(".loginAndSignUp", 0.2, {opacity: 1})
-        TweenLite.to(".signUp", 0.1, {display: 'block'})
-        TweenLite.to(".signUp", 0.2, {opacity: 1})
-      })
-      $(".close").click(function() {
-        TweenLite.to(".loginAndSignUp", 0.1, {display: 'none'})
-        TweenLite.to(".loginAndSignUp", 0.2, {opacity: 0})
-        TweenLite.to(".login", 0.1, {display: 'none'})
-        TweenLite.to(".login", 0.2, {opacity: 0})
-        TweenLite.to(".signUp", 0.1, {display: 'none'})
-        TweenLite.to(".signUp", 0.2, {opacity: 0})
+        $(".loginAndSignUp").css('display', 'block')
+        $(".loginAndSignUp").css('opacity', '1')
+        $(".signUp").css('display', 'block')
+        $(".signUp").css('opacity', '1')
+        $("html").css('overflow','hidden')
+        $("body").css('overflow','hidden')
       })
       
       //default render
       $(".afternoon").hide()
       $(".night").hide()
       $("#weekCheck").text("")
+      $(".colorIndicator").hide()
       
       //渲染週選單
       let i
@@ -302,6 +329,13 @@ export default {
       })
       
       //evt handler
+      $(function(){
+        $('.weekday').on('click','.bookable',function(){
+          console.log('Row ' + $(this).closest("tr").index())
+          console.log('Column ' + $(this).closest("td").index()%7)
+        })
+      }) 
+
       $(".weekCheck").change(function(){
         selectedWeek = $('input[name=weekRadios]:checked').val()
         let dayOneYear = selectedWeek.split("-")[0].split("/")[0]
@@ -386,7 +420,8 @@ export default {
           //填入醫師、治療師姓名
           $('.matchingDoc').append(selectedDocName)
           $('.matchingTherapist').append("<span class='selectedTherapistColor'>" + selectedTherapistName + "</span>")
-          
+          $('.colorIndicator').show()
+
           selectedDoc = doctors.filter(doc => doc.docName == selectedDocName)
           selectedTherapist = therapists.filter(therapist => therapist.therapistName == selectedTherapistName)
           
@@ -460,8 +495,8 @@ export default {
                   if(tempArray[j] == 1){
                     j = j + 2
                     $("#monday td:nth-child(" + j +")").append("<br>" + "<p class='selectedTherapistColor'>" + selectedTherapistName + "</p>")
-                    if($("#monday td:nth-child(" + j +")").text().length > 3){
-                      $("#monday td:nth-child(" + j +")").css("background-color", "yellow")
+                    if($("#monday td:nth-child(" + j +")").text().length > 5){
+                      $("#monday td:nth-child(" + j +")").addClass("bookable")
                     }
                     j = j - 2
                   }
@@ -474,8 +509,8 @@ export default {
                   if(tempArray[j] == 1){
                     j = j + 2
                     $("#tuesday td:nth-child(" + j +")").append("<br>" + "<p class='selectedTherapistColor'>" + selectedTherapistName + "</p>")
-                    if($("#tuesday td:nth-child(" + j +")").text().length > 3){
-                      $("#tuesday td:nth-child(" + j +")").css("background-color", "yellow")
+                    if($("#tuesday td:nth-child(" + j +")").text().length > 5){
+                      $("#tuesday td:nth-child(" + j +")").addClass("bookable")
                     }
                     j = j - 2
                   }
@@ -488,8 +523,8 @@ export default {
                   if(tempArray[j] == 1){
                     j = j + 2
                     $("#wednesday td:nth-child(" + j +")").append("<br>" + "<p class='selectedTherapistColor'>" + selectedTherapistName + "</p>")
-                    if($("#wednesday td:nth-child(" + j +")").text().length > 3){
-                      $("#wednesday td:nth-child(" + j +")").css("background-color", "yellow")
+                    if($("#wednesday td:nth-child(" + j +")").text().length > 5){
+                      $("#wednesday td:nth-child(" + j +")").addClass("bookable")
                     }
                     j = j - 2
                   }
@@ -502,8 +537,8 @@ export default {
                   if(tempArray[j] == 1){
                     j = j + 2
                     $("#thursday td:nth-child(" + j +")").append("<br>" + "<p class='selectedTherapistColor'>" + selectedTherapistName + "</p>")
-                    if($("#thursday td:nth-child(" + j +")").text().length > 3){
-                      $("#thursday td:nth-child(" + j +")").css("background-color", "yellow")
+                    if($("#thursday td:nth-child(" + j +")").text().length > 5){
+                      $("#thursday td:nth-child(" + j +")").addClass("bookable")
                     }
                     j = j - 2
                   }
@@ -516,8 +551,8 @@ export default {
                   if(tempArray[j] == 1){
                     j = j + 2
                     $("#friday td:nth-child(" + j +")").append("<br>" + "<p class='selectedTherapistColor'>" + selectedTherapistName + "</p>")
-                    if($("#friday td:nth-child(" + j +")").text().length > 3){
-                      $("#friday td:nth-child(" + j +")").css("background-color", "yellow")
+                    if($("#friday td:nth-child(" + j +")").text().length > 5){
+                      $("#friday td:nth-child(" + j +")").addClass("bookable")
                     }
                     j = j - 2
                   }
@@ -542,7 +577,11 @@ export default {
       diff = d.getDate() - day + (day == 0 ? -2:5) + i*7; // adjust when day is sunday
       return new Date(d.setDate(diff)); 
     } 
-  }
+  },
+  components: {
+    Login,
+    Signup
+  },
 }
 </script>
 
@@ -554,6 +593,14 @@ html, body
   font-weight: 600
   font-size: 26px
   
+.buttons
+  position: absolute
+  right: 10px
+  .btn
+    font-size: 18px
+  .btn-primary
+    margin-right: 10px
+
 .system
   padding: 20px
   
@@ -561,37 +608,48 @@ html, body
   background-color: rgba(0,0,0,0.1)
   height: 60px
   width: 100%
-  .btn-primary
-    position: absolute
-    right: 90px
-  .btn-secondary
-    position: absolute
-    right: 30px
   
-.matchingDoc, .matchingTherapist
+.indicators, .colorIndicator
+  display: flex
   font-size: 18px
   font-weight: 600
-.matchingDoc
+  align-items: center
+
+.matchingDoc, .matchingTherapist
   margin-right: 50px
-  
+
+.square1, .square2
+  height: 10px
+  width: 20px
+  border: 1px solid black
+  margin-right: 10px
+
+.square1
+  background-color: yellow
+.square2
+  background-color: red
+
+.matchingStatus
+  margin-right: 50px
+
 .table
-  width: 1100px
   font-size: 18px
-  margin: 10px 0px
+  margin: 10px 0px 0px 0px
   th
     background-color: rgba(0,0,0,0.05)
     text-align: center
 
 .check
   display: flex
-  margin-bottom: 10px
-  
+  .form-check-input
+    transform: translateY(8px)
 
 .form-check
   display: flex
   margin-right: 10px
   .form-check-label
     font-size: 16px
+    transform: translateX(-5px)
   
 .form
   width: 350px
@@ -621,37 +679,12 @@ html, body
 .alertMsg
   color: red
   font-size: 16px
-  
-.loginAndSignUp
-  position: absolute
-  width: 100%
-  height: 100%
-  z-index: 99
-  background-color: rgba(0,0,0,0.3)
-  display: none
-  opacity: 0
-  .close
-    position: absolute
-    right: 30px
-    top: 20px
-    cursor: pointer
 
-.login, .signUp
-  z-index: 100
-  background-color: white
-  border: 1px solid black  
-  width: 700px
-  height: 500px
-  border-radius: 30px
-  padding: 50px
-  position: absolute
-  left: 50%
-  top: 50%
-  transform: translate(-350px, -250px)
-  display: none
-  opacity: 0
-  h6
-    text-align: center
-  .btn
-    font-size: 20px
+#matchBtn
+  font-size: 14px
+
+.bookable
+  cursor: pointer
+  background-color: yellow !important
+  
 </style>
