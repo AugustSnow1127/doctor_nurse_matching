@@ -1,24 +1,6 @@
 # matching
+This project was built for my supervisor in Taoyuan Psychiatric Center.
 
-## Project setup
-```
-npm install
-```
+The main function is to match consulting hour of doctors and psychological counselor.
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+This project was abort because I have to take mandatory military service at that time.
